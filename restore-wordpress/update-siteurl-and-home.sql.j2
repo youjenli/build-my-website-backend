@@ -1,4 +1,4 @@
 use {{ wp_db_name }};
-update wp_options set option_value = '{{ host_name }}' where option_name = 'siteurl';
-update wp_options set option_value = '{{ host_name }}' where option_name = 'home';
+update wp_options set option_value = 'http://{{ host_name }}' where option_name = 'siteurl';
+update wp_options set option_value = 'http://{{ host_name }}' where option_name = 'home';
 
