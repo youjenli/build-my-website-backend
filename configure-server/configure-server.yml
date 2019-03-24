@@ -68,6 +68,10 @@
   file:
     path: "{{ item.path }}"
     state: absent
+  # ansible find module 回傳的參數是一個 json 物件，裡面的 files 是查詢結果清單
+  # 清單項目的 path 參數才是這邊用得到的路徑
+  # 欲了解詳情可參閱 ansible find module 的說明
+  # https://docs.ansible.com/ansible/latest/modules/find_module.html
   with_items: "{{ httpd_confs_which_should_be_removed.files }}"
   become: yes
   become_user: root
