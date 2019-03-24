@@ -57,7 +57,7 @@
 - name: "找出此網站原本可能已經存在於 httpd 設定資料夾的舊設定檔"
   find:
     paths: "/etc/httpd/conf.d"
-    patterns: "{{ host_name }}.*'\'.conf$"
+    patterns: "^{{ host_name }}.*conf$"
     use_regex: yes
   when: should_clean_up_env_before_setup == true
   register: httpd_confs_which_should_be_removed
@@ -68,7 +68,7 @@
   file:
     path: "{{ item.path }}"
     state: absent
-  with_items: "{{ httpd_confs_which_should_be_removed }}"
+  with_items: "{{ httpd_confs_which_should_be_removed.files }}"
   become: yes
   become_user: root
 
