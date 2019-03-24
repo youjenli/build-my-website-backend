@@ -110,3 +110,6 @@
         state: restarted
       become: yes
       become_user: root
+
+    # name: 設定按時自動備份 wordpress 的排程
+    - include: ../setup-wordpress-backup-scedule/setup-wordpress-backup-scedule.yml
