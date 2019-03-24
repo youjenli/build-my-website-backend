@@ -1,4 +1,5 @@
 use {{ wp_db_name }};
+/* 注意， siteurl 和 home 參數前面一定要加上通訊協定，否則網站啟動後存取子路徑會被導向無效的連結 */
 update wp_options set option_value = 'http://{{ host_name }}' where option_name = 'siteurl';
 update wp_options set option_value = 'http://{{ host_name }}' where option_name = 'home';
 
