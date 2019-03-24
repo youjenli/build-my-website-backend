@@ -1,6 +1,6 @@
 ---
 - name: 載入定期備份的參數設定
-  include_vars: ./vars-setup-backup-scedule.yml
+  include_vars: ./vars-setup-wordpress-backup-scedule.yml
 
 - name: 安裝 ansible
   yum:
