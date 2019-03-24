@@ -26,9 +26,8 @@
     dest: /home/{{ ansible_user }}/bin/backup-wordpress
     mode: 0754
   with_items:
-    - ./backup-wordpress.yml
-    - ./vars-wp.yml
-    - ./vars-credentials.yml
+    - ../backup-wordpress/backup-wordpress.yml
+    - ../backup-wordpress/vars-credentials.yml
 
 - name: 替換 vars-credentials 裡面的 target_hosts 設定
   lineinfile:
