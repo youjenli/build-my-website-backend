@@ -1,0 +1,58 @@
+---
+# 申請 SSL 憑證的工作流程
+- name: 為 certbot 先安裝 epel 套件庫
+  yum:
+    name: epel-release
+    state: latest
+  become: yes
+  become_user: root
+
+- name: 安裝 certbot
+  yum:
+    name: certbot
+    state: latest
+  become: yes
+  become_user: root  
+
+- name: 安裝 python2-certbot-apache
+  yum:
+    name: python2-certbot-apache
+    state: latest
+  become: yes
+  become_user: root
+
+- name: 安裝 ansible expect 模組要用的 python pexpect 模組
+  pip:
+    name: pexpect
+  become: yes
+  become_user: root
+
+- name: 讀取申請 SSL 憑證的參數
+  include_vars: ./vars-request-ssl-certificate.yml
+
+- name: 申請 SSL 憑證
+  expect:
+    command: certbot --apache
+    responses:
+      (?i)email: "{{ ssl_email }}"
+      (?i)existing: "{{ ssl_existing }}"
+      (?i)Terms of Service: "{{ ssl_Terms_of_Service }}"
+      (?i)Electronic Frontier: "{{ ssl_Electronic_Frontier }}"
+      (?i)names: "{{ ssl_names }}"
+      (?i)redirect: "{{ ssl_request_redirection }}"
+  become: yes
+  become_user: root
+  # 設定 ignore errors 的原因是為了在 certbot 申請超出上限時，可以不會導致後續流程出錯。
+  ignore_errors: yes
+
+- name: 設定憑證自動更新的排程
+  cron:
+    name: "建立 certbot 更新 apache 憑證的排程"
+    job: "certbot renew --apache"
+    user: root
+    # 只有要設定執行時間的欄位才要特別寫出來。若想採用預設值「*」就不必寫，否則 ansible 會報錯。
+    weekday: "{{ ssl_weekly_renew_day }}"
+    state: present
+  # 就算有指定 crontab 使用者，become user 這兩項設定也要加上去，否則會無法執行
+  become: yes
+  become_user: root

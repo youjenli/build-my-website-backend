@@ -1,0 +1,12 @@
+---
+# 與申請 SSl 憑證相關的資訊
+# 透過 certbot 申請 let's encrypt SSL 憑證的參數
+ssl_email:
+ssl_existing:
+ssl_Terms_of_Service:
+ssl_Electronic_Frontier:
+ssl_names:
+ssl_request_redirection:
+
+# 用來排程自動更新 ssl 憑證
+ssl_weekly_renew_day:

@@ -1,0 +1,12 @@
+---
+# 這個檔案記錄的是系統的組態和維運設定，將隨系統升級而不斷更新。
+# 要安裝的 wordpress 版本
+wp_version: 5.1.1
+
+# 要安裝的 wordpress 套件與其版本
+# 千萬注意，key 值的前後一定要加上雙引號，這樣當 ansible command module 把這些參數組合為指令時，
+# 才不會誤以為套件名稱中每一個單字都是指令參數。
+wp_plugins:
+  - { name: '"Admin Menu Editor"', version: '1.8.8' }
+  - { name: 'WP-Optimize', version: '2.2.13' }
+  - { name: '"WP Maintenance Mode"', version: '2.2.3' }

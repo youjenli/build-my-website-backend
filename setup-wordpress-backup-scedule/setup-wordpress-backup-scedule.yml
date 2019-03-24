@@ -1,0 +1,54 @@
+---
+- name: 載入定期備份的參數設定
+  include_vars: ./vars-setup-backup-scedule.yml
+
+- name: 安裝 ansible
+  yum:
+    name: ansible
+    state: latest
+  become: yes
+  become_user: root
+
+- name: 移除伺服器上可能已存在的舊版備份指令稿
+  file:
+    path: /home/{{ ansible_user }}/bin/backup-wordpress
+    state: absent
+  when: should_clean_up_env_before_setup == true
+
+- name: 在伺服器建立存放備份指令稿的目錄
+  file:
+    path: /home/{{ ansible_user }}/bin/backup-wordpress
+    state: directory
+
+- name: 傳送用於執行備份的 ansible 指令稿
+  copy:
+    src: "{{ item }}"
+    dest: /home/{{ ansible_user }}/bin/backup-wordpress
+    mode: 0754
+  with_items:
+    - ./backup-wordpress.yml
+    - ./vars-wp.yml
+    - ./vars-credentials.yml
+
+- name: 替換 vars-credentials 裡面的 target_hosts 設定
+  lineinfile:
+    path: /home/{{ ansible_user }}/bin/backup-wordpress/vars-credentials.yml
+    regexp: "^target_host: {{ target_host }}.*"
+    line: 'target_host: localhost'
+
+- name: 立刻執行一次備份
+  command: "ansible-playbook /home/{{ ansible_user }}/bin/backup-wordpress/backup-wordpress.yml"
+
+- name: 設定每月一號備份 wordpress 的排程
+  cron:
+    name: 每月一日定期備份 worpress 系統
+    day: 1
+    job: "/usr/bin/ansible-playbook /home/{{ ansible_user }}/bin/backup-wordpress/backup-wordpress.yml"
+    user: "{{ ansible_user }}"
+
+- name: 設定每月十五日備份 wordpress 的排程
+  cron:
+    name: 每月十五日定期備份 worpress 系統
+    day: 15
+    job: "/usr/bin/ansible-playbook /home/{{ ansible_user }}/bin/backup-wordpress/backup-wordpress.yml"
+    user: "{{ ansible_user }}"

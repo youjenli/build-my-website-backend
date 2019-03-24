@@ -1,0 +1,15 @@
+<VirtualHost *:80>
+    ServerName {{ host_name }}
+    ServerAdmin {{ server_admin_email }}
+    DocumentRoot /var/www/html/{{ host_name }}
+
+    <Directory "/var/www/html/{{ host_name }}">
+        DirectoryIndex index.php index.html index.htm
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+    </Directory>
+
+    ErrorLog /var/log/httpd/{{ host_name }}-error.log
+    CustomLog /var/log/httpd/{{ host_name }}-access.log combined
+
+</VirtualHost>

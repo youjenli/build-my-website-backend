@@ -1,0 +1,50 @@
+---
+# 安裝 mariadb 的工作流程
+- name: 安裝 mariadb
+  yum:
+    name: mariadb-server
+    state: latest
+  become: yes
+  become_user: root
+
+- name: 啟動 maria db
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+  become: yes
+  become_user: root
+
+# 以下步驟是為了完成  Ansible mysql_secure_installation 的作業
+
+- name: 設定 root 使用者的密碼
+  mysql_user:
+    name: root
+    login_user: root
+    password: "{{ mariadb_root_pwd }}"
+    host: "{{ item }}"
+  with_items:
+    - "{{ host_name }}"
+    - 127.0.0.1
+    - localhost
+  # 因為管理者可能已設定 root 的密碼，所以當設定 root 密碼作業錯誤時，繼續執行後續作業。
+  ignore_errors: yes
+
+- name: 刪除 mariadb 本地的匿名使用者
+  mysql_user:
+    name: ""
+    host: "{{ item }}"
+    state: absent
+    login_user: root
+    login_password: "{{ mariadb_root_pwd }}"
+  with_items:
+    - "{{ host_name }}"
+    - 127.0.0.1
+    - localhost
+
+- name: 刪除 mariadb 測試資料庫
+  mysql_db:
+    name: test
+    state: absent
+    login_user: root
+    login_password: "{{ mariadb_root_pwd }}"

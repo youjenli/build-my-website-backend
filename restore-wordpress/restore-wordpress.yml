@@ -1,0 +1,119 @@
+---
+# 還原環境的指令稿
+- hosts: "{{ target_host }}"
+  vars_files:
+    - ./vars-credentials.yml
+  tasks:
+    # 設定伺服器
+    - include: ../configure-server/configure-server.yml
+
+    - name: 先清空可能存放先前用來還原其他資料的目錄
+      file:
+        path: /tmp/latest
+        state: absent
+
+    # 還原的流程設計是要先透過建置 wordpress 環境的伺服器準備運作環境，然後再引入這份指令稿還原伺服器，
+    # 而不像原本的建置流程會去下載指定版本的 wordpress。
+
+    - name: 解壓縮要回復的版本
+      unarchive:
+        copy: yes
+        src: ./backup.gz
+        dest: /tmp
+        mode: 0754
+    
+    - name: 停止 httpd 的服務
+      service:
+        name: httpd
+        state: stopped
+      become: yes
+      become_user: root
+    
+    # 安全起見，還原前要先刪除已在部署位置的執行檔以免版本錯亂
+    # 至於資料庫的部分則另外處理
+    - name: 刪除在部署位置的執行檔
+      file:
+        name: "{{ project_path }}/{{ host_name }}"
+        state: absent
+      become: yes
+      become_user: root
+    
+    - name: 送系統執行檔到部署位置
+      command: "rsync -rlgo /tmp/latest/{{ host_name }} {{ project_path }} --specials"
+      # 這些 rsync 參數的意義
+      # -r, --recursive             recurse into directories
+      # -l, --links                 copy symlinks as symlinks
+      # -o, --owner                 preserve owner (super-user only)
+      # -g, --group                 preserve group
+      # --specials              preserve special files
+      # --exclude=PATTERN       exclude files matching PATTERN
+      # rsync 可能會不複製所有檔名包含 .git 的檔案，但我一時想不到解法，因此暫時先這樣做
+      become: yes
+      become_user: root
+    
+    - name: 設定系統執行檔的擁有者和群組皆為 root
+      file:
+        path: "{{ project_path }}/{{ host_name }}"
+        owner: root
+        group: root
+        recurse: true
+        state: directory
+        # 要提供其他使用者 execute 權限，否則 httpd 會無法讀取檔案提供服務
+        mode: 0755
+      become: yes
+      become_user: root
+    
+    - name: 開放 apache 存取專案錄的權限以利後續手動更新套件
+      acl:
+        path: "{{ project_path }}/{{ host_name }}"
+        state: present
+        # 以下這會讓目標目錄「未來增加」的子目錄都繼承目前的 acl 設定
+        default: yes
+        # recursive 與 default 的差別在於 recursive 使「目前」的子目錄都繼承目前的 acl 設定
+        recursive: yes
+        entity: apache
+        etype: group
+        permissions: rwx
+      become: true
+      become_user: root
+    
+    - name: 啟用資料庫
+      service:
+        name: mariadb
+        state: started
+      become: yes
+      become_user: root
+    
+    - name: 倒資料回資料庫
+      mysql_db:
+        state: import
+        name: {{ wp_db_name }}
+        target: /tmp/latest/backup.sql
+        login_user: "{{ mariadb_wp_user }}"
+        login_password: "{{ mariadb_wp_user_pwd }}"
+    
+    - name: 傳送更新 siteurl 和 home 的 sql 到還原資料目錄
+      template:
+        src: ./update-siteurl-and-home.sql.j2
+        dest: /tmp/latest/update-siteurl-and-home.sql
+        mode: 0754
+    
+    - name: 更新 wordpress 的 siteurl 和 home
+      mysql_db:
+        name: {{ wp_db_name }}
+        state: import
+        target: /tmp/latest/update-siteurl-and-home.sql
+        login_user: "{{ mariadb_wp_user }}"
+        login_password: "{{ mariadb_wp_user_pwd }}"
+    
+    - name: 啟動 httpd
+      service:
+        name: httpd
+        state: started
+      become: yes
+      become_user: root
+    
+    - name: 刪除還原資料夾
+      file:
+        path: /tmp/latest
+        state: absent

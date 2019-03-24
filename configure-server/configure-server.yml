@@ -1,0 +1,232 @@
+---
+# 建置此專案的主要檔案
+- name: 載入設定伺服器要用的參數
+  include_vars: "{{ item }}"
+  with_items:
+    - ./vars-configure-server.yml
+      # 建置過程的機密資訊
+    - ./vars-credentials.yml
+
+# 調整時間
+- name: "調整時區為 Asia/Taipei"
+  timezone:
+    name: Asia/Taipei
+  become: yes
+  become_user: root
+
+- name: "系統對時"
+  command: ntpdate time.google.com
+  become: yes
+  become_user: root
+
+- name: "調整 BIOS 時間"
+  command: hwclock -w
+  become: yes
+  become_user: root
+
+- name: "設定系統排程使系統定期對時"
+  cron:
+    name: "使系統定期藉由 ntpdate 定期向 time.google.com 對時"
+    job: "/usr/sbin/ntpdate time.google.com"
+    user: root
+    # 只有要設定執行時間的欄位才要特別寫出來。若想採用預設值「*」就不必寫，否則 ansible 會報錯。
+    weekday: 1
+    state: present
+  become: yes
+  become_user: root
+
+- name: "將前一步對時的結果寫入 BIOS 時間"
+  cron:
+    name: "將上一步更新後的時間寫入 BIOS 時間"
+    job: "/usr/sbin/hwclock -w"
+    user: root
+    weekday: 1
+    state: present
+  # 就算有指定 crontab 使用者，become user 這兩項設定也要加上去，否則會無法執行
+  become: yes
+  become_user: root
+
+# 安裝 httpd
+- name: "安裝 apache httpd"  
+  yum:
+    name: httpd
+    state: latest
+  become: yes
+  become_user: root
+
+- name: "提供 virtual host 設定檔"
+  template:
+    src: ./httpd.conf.j2
+    dest: /etc/httpd/conf.d/{{ host_name }}.conf
+    owner: root
+    group: root
+  become: yes
+  become_user: root
+
+- name: "為 http, https 服務開放防火牆"
+  firewalld:
+    service: "{{ item }}"
+    zone: public
+    permanent: yes
+    state: enabled
+    immediate: yes
+  become: yes
+  become_user: root
+  with_items:
+    - http
+    - https
+
+- name: "設定開機時啟動 httpd"
+  service:
+    name: httpd
+    enabled: yes
+  become: yes
+  become_user: root
+
+# 申請 SSL 憑證
+
+- include: ./request-ssl-certificate.yml
+  when: should_request_ssl_certificate == true
+
+# 建置 mariadb
+# 首先為了安裝 PyMySQL 而安裝 epel 和 pip。
+# 這三個套件既要用於這步建置 mariadb，還要用於在建置 wordpress 時的灌資料，因此不能隨便取消。
+
+- name: 為 pip 安裝與啟用 epel
+  yum:
+    name: epel-release
+    state: latest
+  become: yes
+  become_user: root
+
+- name: 為 PyMySQL 安裝 pip
+  yum:
+    name: python-pip
+    state: latest
+  become: yes
+  become_user: root
+
+- name: 為操作 mariadb 而安裝 PyMySQL 套件
+  pip:
+    name: PyMySQL
+  become: yes
+  become_user: root
+
+- name: 調查 mariadb 是否已安裝
+  command: "yum list installed mariadb-server | grep mariadb-server"
+  register: mariadb_lookup_result
+  become: yes
+  become_user: root
+
+# 如果 mariadb 未安裝，才接著讀入來自 install-mariadb.yml 的 mariadb 安裝步驟
+- include: ./install-mariadb.yml
+  when: "mariadb_lookup_result.stdout.find('mariadb-server') == -1"
+
+# 如果 mariadb 已安裝，那啟用即可。我們假定此時 root 和 wordpress 資料庫使用者的帳號和密碼都已妥善設定。
+- name: 啟動 maria db
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+  when: "mariadb_lookup_result.stdout.find('mariadb-server') != -1"
+  become: yes
+  become_user: root
+
+# 如果執行建置指令稿的人有要求先清空 wordpress 資料庫，那就先清空
+- name: 清空 wordpress 資料庫
+  mysql_db:
+    name: {{ wp_db_name }}
+    login_user: root
+    login_password: "{{ mariadb_root_pwd }}"
+    state: absent
+  when: should_clean_up_env_before_setup == true
+
+- name: 建立 wordpress 專用的 mariadb 資料庫
+  mysql_db:
+    name: {{ wp_db_name }}
+    login_user: root
+    login_password: "{{ mariadb_root_pwd }}"
+    state: present
+
+- name: 建立給 wordpress 專用的 mariadb 使用者，並且提供它存取專用資料庫的權限
+  mysql_user:
+    name: "{{ mariadb_wp_user }}"
+    password: "{{ mariadb_wp_user_pwd }}"
+    login_user: root
+    login_password: "{{ mariadb_root_pwd }}"
+    host: "{{ item }}"
+    priv: "{{ wp_db_name }}.*:ALL PRIVILEGES"
+  with_items:
+    - "{{ host_name }}"
+    - 127.0.0.1
+    - localhost
+
+# 安裝 php 和 php-mysqlnd
+
+- name: 安裝 remi release 7 repo
+  yum:
+    name: http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+    state: present
+  become: yes
+  become_user: root
+
+# 因為 remi repo 預設使用不符 wordpress 需求的 php 54，所以要調整預設值
+- name: 禁用 remi-php54
+  yum_repository:
+    # 要禁用 yum 檔案庫設定 (.repo) 需要調整 .repo 檔裡面的設定值。
+    # 然而 ansible 的 yum_repository 套件只能透過 state 的 present 和 absent 值決定要覆寫還是移除設定，
+    # 因此當我們只是想調整 enable 的設定值時，就必須在此提供等同不透過 ansible 安裝 remi rpm 所建立的設定，
+    # 這樣當 ansible yum_repository 修改檔案庫設定後，相關的套件維護作業才會正常運作。
+    # 不必擔心此處沒透過 mirrorlist 提供提供本地 .repo 檔案的位置會使 yum_repository 找不到本地的檔案庫，它找得到！
+    # 我們要做的只是確保 yum_repository 不會移除必要設定。
+    name: remi-php54
+    mirrorlist: http://cdn.remirepo.net/enterprise/7/php54/mirror
+    description: Remi's PHP 5.4 RPM repository for Enterprise Linux 7 - $basearch
+    enabled: no
+    gpgcheck: 1
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-remi
+    state: present
+  become: yes
+  become_user: root
+
+- name: 啟用 remi-php73
+  yum_repository:
+    # 這項作業會碰到的問題與前面禁用 remi-php54 相同，因此同樣要提供原本 repo 的完整設定。
+    name: remi-php73
+    mirrorlist: http://cdn.remirepo.net/enterprise/7/php73/mirror
+    description: Remi's PHP 7.3 RPM repository for Enterprise Linux 7 - $basearch
+    enabled: yes
+    gpgcheck: 1
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-remi
+    state: present
+  become: yes
+  become_user: root
+
+- name: 安裝 php、php-mysqlnd
+  yum:
+    name: ['php', 'php-mysqlnd']
+    state: latest
+  become: yes
+  become_user: root
+
+- name: 開放使用者存取專案目錄的權限以利管理者備份專案
+  acl:
+    path: "{{ project_path }}"
+    state: present
+    # default 會讓目標目錄「未來增加」的子目錄都繼承目前的 acl 設定
+    default: yes
+    # recursive 與 default 的差別在於 recursive 使「目前」的子目錄都繼承目前的 acl 設定
+    recursive: yes
+    entity: "{{ ansible_user }}"
+    etype: group
+    permissions: rwx
+  become: true
+  become_user: root
+
+# 安裝其他輔助工具
+- name: 安裝 nano
+  yum:
+    name: nano
+    state: present
+  become: yes
+  become_user: root

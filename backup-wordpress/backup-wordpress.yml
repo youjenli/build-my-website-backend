@@ -1,0 +1,57 @@
+---
+# 備份環境的指令稿
+- hosts: "{{ target_host }}"
+  vars_files:
+    # 建置過程的機密資訊
+    - vars-credentials.yml
+ 
+  tasks:
+    - name: 停止 httpd
+      service:
+        name: httpd
+        state: stopped
+      become: yes
+      become_user: root
+
+    - name: 建立備份資料用的資料夾
+      file:
+        path: /home/{{ ansible_user }}/wp-backup/latest
+        state: directory
+
+    - name: 從資料倒資料表到備份用的資料夾
+      mysql_db:
+        name: {{ wp_db_name }}
+        state: dump
+        target: /home/{{ ansible_user }}/wp-backup/latest/backup.sql
+        login_user: "{{ mariadb_wp_user }}"
+        login_password: "{{ mariadb_wp_user_pwd }}"
+
+    - name: 從資料庫備份系統檔案到備份用的資料夾
+      command: "rsync -rlgo {{ project_path }}/{{ host_name }} /home/{{ ansible_user }}/wp-backup/latest/ --specials --exclude .git"
+      # 這些 rsync 參數的意義
+      # -r, --recursive             recurse into directories
+      # -l, --links                 copy symlinks as symlinks
+      # -o, --owner                 preserve owner (super-user only)
+      # -g, --group                 preserve group
+      # --specials              preserve special files
+      # --exclude=PATTERN       exclude files matching PATTERN
+      # rsync 可能會不複製所有檔名包含 .git 的檔案，但我一時想不到解法，因此暫時先這樣做
+
+    - name: 壓縮備份資料夾並加上日期註記
+      archive:
+        path: /home/{{ ansible_user }}/wp-backup/latest
+        dest: /home/{{ ansible_user }}/wp-backup/my-personal-website-backup-{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}.gz
+        format: gz
+        mode: 0755
+        
+    - name: 重新啟動 httpd
+      service:
+        name: httpd
+        state: started
+      become: yes
+      become_user: root
+  
+    - name: 刪除剛才建立的工作目錄
+      file:
+        path: /home/{{ ansible_user }}/wp-backup/latest
+        state: absent

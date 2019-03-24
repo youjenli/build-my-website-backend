@@ -1,0 +1,6 @@
+---
+# 這份檔案的內容是關於安排 wordpress 自動備份作業的設定
+# ansible 登入用的系統使用者
+ansible_user:
+# 是否要在建置伺服器環境之前先清除可能出現在目標位置上的檔案和資料
+should_clean_up_env_before_setup:
