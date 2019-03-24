@@ -54,6 +54,24 @@
   become: yes
   become_user: root
 
+- name: "找出此網站原本可能已經存在於 httpd 設定資料夾的舊設定檔"
+  find:
+    paths: "/etc/httpd/conf.d"
+    patterns: "{{ host_name }}.*\.conf$"
+    use_regex: yes
+  when: should_clean_up_env_before_setup == true
+  register: httpd_confs_which_should_be_removed
+  become: yes
+  become_user: root
+
+- name: "刪除此網站已經存在於 httpd 設定資料夾的舊設定檔"
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ httpd_confs_which_should_be_removed }}"
+  become: yes
+  become_user: root
+
 - name: "提供 virtual host 設定檔"
   template:
     src: ./httpd.conf.j2
