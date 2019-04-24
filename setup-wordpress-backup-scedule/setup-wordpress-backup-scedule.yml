@@ -41,6 +41,8 @@
 - name: 設定每月一號備份 wordpress 的排程
   cron:
     name: 每月一日定期備份 worpress 系統
+    minute: 0
+    hour: 1
     day: 1
     job: "/usr/bin/ansible-playbook /home/{{ ansible_user }}/bin/backup-wordpress/backup-wordpress.yml"
     user: "{{ ansible_user }}"
@@ -48,6 +50,8 @@
 - name: 設定每月十五日備份 wordpress 的排程
   cron:
     name: 每月十五日定期備份 worpress 系統
+    minute: 0
+    hour: 1
     day: 15
     job: "/usr/bin/ansible-playbook /home/{{ ansible_user }}/bin/backup-wordpress/backup-wordpress.yml"
     user: "{{ ansible_user }}"

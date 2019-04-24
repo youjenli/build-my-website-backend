@@ -30,6 +30,8 @@
     job: "/usr/sbin/ntpdate time.google.com"
     user: root
     # 只有要設定執行時間的欄位才要特別寫出來。若想採用預設值「*」就不必寫，否則 ansible 會報錯。
+    minute: 0
+    hour: 0
     weekday: 1
     state: present
   become: yes
@@ -40,6 +42,8 @@
     name: "將上一步更新後的時間寫入 BIOS 時間"
     job: "/usr/sbin/hwclock -w"
     user: root
+    minute: 10
+    hour: 0
     weekday: 1
     state: present
   # 就算有指定 crontab 使用者，become user 這兩項設定也要加上去，否則會無法執行
