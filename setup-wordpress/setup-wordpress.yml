@@ -103,6 +103,15 @@
       become: true
       become_user: root
       loop: "{{ wp_plugins }}"
+
+    - name: 設定 wordpress permalink 的格式
+      # 之所以要做這件事的原因是要讓 wp rest api 以路徑的方式提供服務，而不是用請求參數提供服務
+      # 詳見: https://developer.wordpress.org/rest-api/#routes-endpoints
+      command: |
+        /usr/local/bin/wp option update permalink_structure '/%year%/%monthnum%/%postname%/'
+        --path={{ project_path }}/{{ host_name }}
+      become: yes
+      become_user: root
     
     - name: 重新啟動 httpd
       service:

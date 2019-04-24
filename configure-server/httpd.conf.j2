@@ -9,6 +9,8 @@
         AllowOverride None
     </Directory>
 
+    RewriteEngine on
+    RewriteRule "^/wp-json.*" "/index.php" [L]
     ErrorLog /var/log/httpd/{{ host_name }}-error.log
     CustomLog /var/log/httpd/{{ host_name }}-access.log combined
 
