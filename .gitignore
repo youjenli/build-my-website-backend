@@ -1,11 +1,18 @@
-backup-wordpress/vars-credentials.yml
+backup-wordpress/vars-credentials*.yml
+!backup-wordpress/vars-credentials-template.yml
 
-configure-server/vars-configure-server.yml
-configure-server/vars-credentials.yml
-configure-server/vars-request-ssl-certificate.yml
+configure-server/vars-configure-server*.yml
+!configure-server/vars-configure-server-template.yml
+configure-server/vars-credentials*.yml
+!configure-server/vars-credentials-template.yml
+configure-server/vars-request-ssl-certificate*.yml
+!configure-server/vars-request-ssl-certificate-template.yml
 
-restore-wordpress/vars-credentials.yml
+restore-wordpress/vars-credentials*.yml
+!restore-wordpress/vars-credentials-template.yml
 
-setup-wordpress/vars-credentials.yml
+setup-wordpress/vars-credentials*.yml
+!setup-wordpress/vars-credentials-template.yml
 
-setup-wordpress-backup-scedule/vars-setup-wordpress-backup-scedule.yml
+setup-wordpress-backup-scedule/vars-setup-wordpress-backup-scedule*.yml
+!setup-wordpress-backup-scedule/vars-setup-wordpress-backup-scedule-template.yml
