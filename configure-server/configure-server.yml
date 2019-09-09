@@ -80,12 +80,24 @@
   become: yes
   become_user: root
 
-- name: "提供 virtual host 設定檔"
+- name: "提供網站 http 服務 virtual host 設定檔"
   template:
     src: ./httpd.conf.j2
     dest: /etc/httpd/conf.d/{{ host_name }}.conf
     owner: root
     group: root
+  become: yes
+  become_user: root
+
+  # 這是我參考 certbot 提供給 httpd 的設定範例而開發來執行 ssl 設定作業的任務
+- name: "提供網站 https 服務的 virtual host 設定檔"
+  template:
+    src: ./httpd-le-ssl.conf.j2
+    dest: /etc/httpd/conf.d/{{ host_name }}-ssl.conf
+    owner: root
+    group: root
+  # 只有要申請憑證才提供 https 的設定檔
+  when: should_request_ssl_certificate == true
   become: yes
   become_user: root
 

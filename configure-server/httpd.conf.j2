@@ -1,9 +1,9 @@
 <VirtualHost *:80>
     ServerName {{ host_name }}
     ServerAdmin {{ server_admin_email }}
-    DocumentRoot /var/www/html/{{ host_name }}
+    DocumentRoot {{ project_path }}{{ host_name }}
 
-    <Directory "/var/www/html/{{ host_name }}">
+    <Directory "{{ project_path }}{{ host_name }}">
         DirectoryIndex index.php index.html index.htm
         Options -Indexes +FollowSymLinks
         AllowOverride None
@@ -14,4 +14,12 @@
     ErrorLog /var/log/httpd/{{ host_name }}-error.log
     CustomLog /var/log/httpd/{{ host_name }}-access.log combined
 
+    {% if should_request_ssl_certificate == true %}
+    RewriteEngine on
+    RewriteCond %{SERVER_NAME} ={{ host_name }}
+    RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+    {% endif %}
+
 </VirtualHost>
+
+
