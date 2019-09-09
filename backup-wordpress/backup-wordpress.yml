@@ -27,7 +27,7 @@
         login_password: "{{ mariadb_wp_user_pwd }}"
 
     - name: 從資料庫備份系統檔案到備份用的資料夾
-      command: "rsync -rlgo {{ project_path }}/{{ host_name }} /home/{{ ansible_user }}/wp-backup/latest/ --specials --exclude .git"
+      command: "rsync -rlgo {{ project_path }}{{ host_name }} /home/{{ ansible_user }}/wp-backup/latest/ --specials --exclude .git"
       # 這些 rsync 參數的意義
       # -r, --recursive             recurse into directories
       # -l, --links                 copy symlinks as symlinks

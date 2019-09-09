@@ -25,7 +25,7 @@
     # 若需要清空可能已存在的資料，則執行這兩步作業
     - name: "清空網站目錄內容 (若有的話)"
       file:
-        path: "{{ project_path }}/{{ host_name }}"
+        path: "{{ project_path }}{{ host_name }}"
         state: absent
       become: yes
       become_user: root
@@ -33,13 +33,13 @@
     
     - name: 重新建立 wordpress 網站資料夾
       file:
-        path: "{{ project_path }}/{{ host_name }}"
+        path: "{{ project_path }}{{ host_name }}"
         state: directory
       become: yes
       become_user: root
     
     - name: 安裝 wordpress
-      command: "/usr/local/bin/wp core download --path={{ project_path }}/{{ host_name }} --version={{ wp_version }}"
+      command: "/usr/local/bin/wp core download --path={{ project_path }}{{ host_name }} --version={{ wp_version }}"
       become: yes
       become_user: root
     
@@ -49,7 +49,7 @@
         --dbname={{ wp_db_name }}
         --dbuser={{ mariadb_wp_user }}
         --dbpass={{ mariadb_wp_user_pwd }}
-        --path={{ project_path }}/{{ host_name }}
+        --path={{ project_path }}{{ host_name }}
       become: yes
       become_user: root  
     
@@ -57,7 +57,7 @@
     
     - name: 開放 apache 存取專案錄的權限以利後續手動更新套件
       acl:
-        path: "{{ project_path }}/{{ host_name }}"
+        path: "{{ project_path }}{{ host_name }}"
         state: present
         # 以下這會讓目標目錄「未來增加」的子目錄都繼承目前的 acl 設定
         default: yes
@@ -70,7 +70,7 @@
       become_user: root
     
     - name: 額外設定 wordpress
-      command: "/usr/local/bin/wp config set FS_METHOD direct --path={{ project_path }}/{{ host_name }}"
+      command: "/usr/local/bin/wp config set FS_METHOD direct --path={{ project_path }}{{ host_name }}"
       become: yes
       become_user: root
     
@@ -86,7 +86,7 @@
     - name: 初始化 wordpress
       command: |
         /usr/local/bin/wp core install
-        --path={{ project_path }}/{{ host_name }}
+        --path={{ project_path }}{{ host_name }}
         --url={{ host_name }}
         --title={{ wp_title }}
         --admin_user={{ wp_admin_user }}
@@ -98,7 +98,7 @@
     - name: 安裝 wordpress 擴充套件
       command: |
         /usr/local/bin/wp plugin install {{ item.name }}
-        --path={{ project_path }}/{{ host_name }}
+        --path={{ project_path }}{{ host_name }}
         --version={{ item.version }}
       become: true
       become_user: root

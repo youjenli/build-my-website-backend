@@ -13,7 +13,7 @@
         state: absent
 
     # 還原的流程設計是要先透過建置 wordpress 環境的伺服器準備運作環境，然後再引入這份指令稿還原伺服器，
-    # 而不像原本的建置流程會去下載指定版本的 wordpress。
+    # 而不像 setup-wordpress 的建置流程會透過 wp-cli 下載指定版本的 wordpress。
 
     - name: 解壓縮要回復的版本
       unarchive:
@@ -33,7 +33,7 @@
     # 至於資料庫的部分則另外處理
     - name: 刪除在部署位置的執行檔
       file:
-        name: "{{ project_path }}/{{ host_name }}"
+        name: "{{ project_path }}{{ host_name }}"
         state: absent
       become: yes
       become_user: root
@@ -53,7 +53,7 @@
     
     - name: 設定系統執行檔的擁有者和群組皆為 root
       file:
-        path: "{{ project_path }}/{{ host_name }}"
+        path: "{{ project_path }}{{ host_name }}"
         owner: root
         group: root
         recurse: true
@@ -65,7 +65,7 @@
     
     - name: 開放 apache 存取專案錄的權限以利後續手動更新套件
       acl:
-        path: "{{ project_path }}/{{ host_name }}"
+        path: "{{ project_path }}{{ host_name }}"
         state: present
         # 以下這會讓目標目錄「未來增加」的子目錄都繼承目前的 acl 設定
         default: yes
