@@ -2,7 +2,7 @@
 # 這份檔案是設定伺服器的作業參數
 # 用來給 ansible 登入主機的帳號名稱
 ansible_user:
-# 是否要在建置伺服器環境之前先清除可能出現在目標位置上的檔案和資料
-should_clean_up_env_before_setup: false
-# 是否要申請 SSL 憑證
-should_request_ssl_certificate: false
+# 是否要在建置伺服器環境之前先清除可能出現在目標位置上的檔案和資料，請填 true 或 false
+should_clean_up_env_before_setup:
+# 是否要申請 SSL 憑證，請填 true 或 false
+should_request_ssl_certificate:

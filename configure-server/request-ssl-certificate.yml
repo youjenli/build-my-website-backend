@@ -32,18 +32,49 @@
 
 - name: 申請 SSL 憑證
   expect:
-    command: certbot --apache
+    command: "certbot --apache --domains {{ host_name }}"
     responses:
       (?i)email: "{{ ssl_email }}"
-      (?i)existing: "{{ ssl_existing }}"
       (?i)Terms of Service: "{{ ssl_Terms_of_Service }}"
       (?i)Electronic Frontier: "{{ ssl_Electronic_Frontier }}"
-      (?i)names: "{{ ssl_names }}"
-      (?i)redirect: "{{ ssl_request_redirection }}"
+      # certbot 會根據這個選項決定是否要將網站導向以 https 連接，回答 1 是不要，2 是要。
+      # 因為 certbot 似乎只有在使用者令它導向 https 的情況下才會在其設定資料匣── /etc/letsencrypt/ 裡面
+      # 產生與 https 設定相關的 options-ssl-apache.conf 檔案，所以這邊選 2，讓它自動產生 https 設定和相關設定檔。
+      (?i)redirect: "2"
+      # 若要申請憑證的系統上已有目標憑證，則系統會拋出下列問題詢問接下來要做什麼：
+      # You have an existing certificate that has exactly the same domains or certificate name you requested and isn't close to expiry.
+      # (ref: /etc/letsencrypt/renewal/your-domain.com)
+      # What would you like to do?
+      # 1: Attempt to reinstall this existing certificate
+      # 2: Renew & replace the cert (limit ~5 per 7 days)
+      # Select the appropriate number [1-2] then [enter] (press 'c' to cancel)cate", "2: Renew & replace the cert (limit ~5 per 7 days)
+      (?i)existing: "{{ ssl_renew_or_cancel }}"
   become: yes
   become_user: root
   # 設定 ignore errors 的原因是為了在 certbot 申請超出上限時，可以不會導致後續流程出錯。
   ignore_errors: yes
+
+# 檢查 certbot 是否確實產生 https 設定檔。
+- name: "檢查 httpd 的 https 服務設定檔是否存在。"
+  find:
+    paths: "/etc/httpd/conf.d/"
+    patterns: "^{{ host_name }}-ssl.conf$"
+    use_regex: yes
+  register: ssl_config_of_httpd_exists
+  become: yes
+  become_user: root
+
+# 若此建置作業需要產生 ssl 憑證而上一步卻未檢查到的話，
+# 則拿我參考 certbot 給 httpd 的 ssl 設定所開發的範本產生 ssl 設定檔給 httpd。
+- name: "根據檢查 httpd 的 https 服務設定檔的結果判斷這次建置作業是否要產生 ssl 設定"
+  template:
+    src: ./httpd-le-ssl.conf.j2
+    dest: /etc/httpd/conf.d/{{ host_name }}-ssl.conf
+    owner: root
+    group: root
+  when: ssl_config_of_httpd_exists == false
+  become: yes
+  become_user: root
 
 - name: 設定憑證自動更新的排程
   cron:

@@ -9,16 +9,11 @@ ssl_email:
 # 是否同意服務協議？ 寫「A」是同意，「C」是取消
 ssl_Terms_of_Service:
 
-ssl_existing:
-
 # 是否同意分享 email 給 Electronic Frontier？ 寫「Y」是同意，「N」是不同意。
 ssl_Electronic_Frontier:
 
-# 網站名稱，範例 www.example.com
-ssl_names:
-
-# 是否讓 certbot 增加 httpd 的設定，使其把 http 連線導向 https？ 寫「1」是不導向，「2」是導向。
-ssl_request_redirection:
-
 # 用來排程自動更新 ssl 憑證
 ssl_weekly_renew_day:
+
+# 若發現系統上已經有想產生的憑證，那該如何處置？ 若要強制更新憑證則選 2，否則選 c 停止憑證的更新作業。
+ssl_renew_or_cancel: 2
