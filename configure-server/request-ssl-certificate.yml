@@ -58,7 +58,7 @@
 - name: "檢查 httpd 的 https 服務設定檔是否存在。"
   find:
     paths: "/etc/httpd/conf.d/"
-    patterns: "^{{ host_name }}-ssl.conf$"
+    patterns: "^{{ host_name }}-le-ssl.conf$"
     use_regex: yes
   register: ssl_config_of_httpd_exists
   become: yes
