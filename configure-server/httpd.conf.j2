@@ -9,17 +9,27 @@
         AllowOverride None
     </Directory>
 
-    RewriteEngine on
-    RewriteRule "^/wp-json.*" "/index.php" [L]
     ErrorLog /var/log/httpd/{{ host_name }}-error.log
     CustomLog /var/log/httpd/{{ host_name }}-access.log combined
 
-    {% if should_request_ssl_certificate == true %}
     RewriteEngine on
-    RewriteCond %{SERVER_NAME} ={{ host_name }}
-    RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+    {% if should_request_ssl_certificate == true %}
+    RewriteCond %{HTTPS} off
+    RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
+    #END 是在此結束重導向作業而不繼續執行的意思。
+    #NE flag 是 no escape 的意思。
+    #R 是請瀏覽器重導的意思，Permanent 是要告訴瀏覽器重導的狀態。
+    #L 是 last 的縮寫，意指不執行接下來的 rewrite rule。
+    #詳見 https://httpd.apache.org/docs/2.4/rewrite/flags.html
     {% endif %}
+    {# 某些情況下，可能希望系統連線不要加密，但這種情況仍需要重新導向請求，故這邊要套用這些重導規則 #}
+    #如果請求 /index.php，則不重導
+    RewriteRule ^index\.php$ - [END]
+    #條件：路徑不會對應檔案
+    RewriteCond %{REQUEST_URI} !-f
+    #條件：路徑不會對應資料匣
+    RewriteCond %{REQUEST_URI} !-d
+    #全部導向根路徑的 index.php
+    RewriteRule . /index.php [L]
 
 </VirtualHost>
-
-

@@ -14,5 +14,17 @@
     SSLCertificateKeyFile /etc/letsencrypt/live/{{ host_name }}/privkey.pem
     Include /etc/letsencrypt/options-ssl-apache.conf
     SSLCertificateChainFile /etc/letsencrypt/live/{{ host_name }}/chain.pem
+
+    {# 因為 port 443 這邊是建立額外的 virtualhost，所以一樣需要實現 wordpress 需要的重新導向 #}
+    RewriteEngine On
+    #如果請求 /index.php，則不重導
+    RewriteRule ^index\.php$ - [END]
+    #條件：路徑不會對應檔案
+    RewriteCond %{REQUEST_URI} !-f
+    #條件：路徑不會對應資料匣
+    RewriteCond %{REQUEST_URI} !-d
+    #全部導向根路徑的 index.php
+    RewriteRule . /index.php [L]
+
 </VirtualHost>
 </IfModule>
