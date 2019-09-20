@@ -10,3 +10,4 @@ wp_plugins:
   - { name: '"Admin Menu Editor"', version: '1.8.8' }
   - { name: 'WP-Optimize', version: '2.2.13' }
   - { name: '"WP Maintenance Mode"', version: '2.2.3' }
+  - { name: '"Meta Box"', version: '5.2.0' }
