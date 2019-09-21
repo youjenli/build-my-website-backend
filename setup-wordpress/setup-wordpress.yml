@@ -74,6 +74,16 @@
       become: yes
       become_user: root
     
+    - name: 傳送 .htaccess 到遠端系統上，利用它來為 wordpress 調整 httpd 的設定
+      copy:
+        src: "{{ item }}"
+        dest: "{{ project_path }}{{ host_name }}"
+        mode: 0750
+      with_items:
+        - ./.htaccess
+      become: yes
+      become_user: root
+
     # 接下來繼續回來安裝 wordpress
     
     - name: 啟動 httpd
