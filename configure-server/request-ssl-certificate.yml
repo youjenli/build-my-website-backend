@@ -38,9 +38,8 @@
       (?i)Terms of Service: "{{ ssl_Terms_of_Service }}"
       (?i)Electronic Frontier: "{{ ssl_Electronic_Frontier }}"
       # certbot 會根據這個選項決定是否要將網站導向以 https 連接，回答 1 是不要，2 是要。
-      # 因為 certbot 似乎只有在使用者令它導向 https 的情況下才會在其設定資料匣── /etc/letsencrypt/ 裡面
-      # 產生與 https 設定相關的 options-ssl-apache.conf 檔案，所以這邊選 2，讓它自動產生 https 設定和相關設定檔。
-      (?i)redirect: "2"
+      # 因為我打算自行調整 httpd 設定來載入 certbot 在 /etc/letsencrypt/ 裡面提供的 options-ssl-apache.conf 檔案，所以這邊選 1。
+      (?i)redirect: "1"
       # 若要申請憑證的系統上已有目標憑證，則系統會拋出下列問題詢問接下來要做什麼：
       # You have an existing certificate that has exactly the same domains or certificate name you requested and isn't close to expiry.
       # (ref: /etc/letsencrypt/renewal/your-domain.com)

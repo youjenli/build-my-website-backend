@@ -80,12 +80,22 @@
   become: yes
   become_user: root
 
-- name: "提供網站 http 服務 virtual host 設定檔"
+- name: "提供以 http 協定服務的 virtual host 設定檔"
   template:
     src: ./httpd.conf.j2
     dest: /etc/httpd/conf.d/{{ host_name }}.conf
     owner: root
     group: root
+  become: yes
+  become_user: root
+
+- name: "提供以 https 協定服務的 virtual host 設定檔"
+  template:
+    src: ./httpd-ssl.conf.j2
+    dest: /etc/httpd/conf.d/{{ host_name }}-le-ssl.conf
+    owner: root
+    group: root
+  when: should_redirect_request_to_https == true
   become: yes
   become_user: root
 
