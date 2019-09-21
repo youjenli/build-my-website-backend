@@ -7,7 +7,7 @@
     <Directory "{{ project_path }}{{ host_name }}">
         DirectoryIndex index.php index.html index.htm
         Options -Indexes +FollowSymLinks
-        AllowOverride None
+        AllowOverride All
     </Directory>
 
     ErrorLog /var/log/httpd/{{ host_name }}-error.log
@@ -17,16 +17,6 @@
     SSLCertificateFile /etc/letsencrypt/live/{{ host_name }}/cert.pem
     SSLCertificateKeyFile /etc/letsencrypt/live/{{ host_name }}/privkey.pem
     SSLCertificateChainFile /etc/letsencrypt/live/{{ host_name }}/chain.pem
-
-    RewriteEngine On
-    #如果請求 /index.php，則不重導
-    RewriteRule ^index\.php$ -
-    #條件：路徑不會對應檔案
-    RewriteCond %{REQUEST_URI} !-f
-    #條件：路徑不會對應資料匣
-    RewriteCond %{REQUEST_URI} !-d
-    #全部導向根路徑的 index.php
-    RewriteRule . /index.php
 
 </VirtualHost>
 </IfModule>

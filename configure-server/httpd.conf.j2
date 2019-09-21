@@ -6,25 +6,14 @@
     <Directory "{{ project_path }}{{ host_name }}">
         DirectoryIndex index.php index.html index.htm
         Options -Indexes +FollowSymLinks
-        AllowOverride None
+        AllowOverride All
     </Directory>
 
     ErrorLog /var/log/httpd/{{ host_name }}-error.log
     CustomLog /var/log/httpd/{{ host_name }}-access.log combined
 
     RewriteEngine on
-    {# 某些情況下，可能希望系統連線不要加密，但這種情況仍需要重新導向請求，故這邊要套用這些重導規則 #}
-    {% if should_redirect_request_to_https == true %}
     RewriteCond %{HTTPS} off
     RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
-    {% endif %}
-    #如果請求 /index.php，則不重導
-    RewriteRule ^index\.php$ -
-    #條件：路徑不會對應檔案
-    RewriteCond %{REQUEST_URI} !-f
-    #條件：路徑不會對應資料匣
-    RewriteCond %{REQUEST_URI} !-d
-    #全部導向根路徑的 index.php
-    RewriteRule . /index.php
 
 </VirtualHost>
