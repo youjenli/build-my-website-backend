@@ -76,11 +76,9 @@
     
     - name: 傳送 .htaccess 到遠端系統上，利用它來為 wordpress 調整 httpd 的設定
       copy:
-        src: "{{ item }}"
+        src: ./.htaccess
         dest: "{{ project_path }}{{ host_name }}"
-        mode: 0750
-      with_items:
-        - ./.htaccess
+        mode: 0664
       become: yes
       become_user: root
 
