@@ -10,3 +10,8 @@ RewriteRule ^index\.php$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.php [L]
+
+# 根據以下連結的教學，有時 httpd 會搶先在 php 之前發現請求的資源不存在。
+# https://codex.wordpress.org/Creating_an_Error_404_Page
+# 為確保系統在這種情況下仍能正常運作，官方建議加入下面一列設定
+ErrorDocument 404 /index.php?error=404
