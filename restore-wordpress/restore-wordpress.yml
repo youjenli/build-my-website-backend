@@ -80,8 +80,15 @@
       become: yes
       become_user: root
 
+    - name: 產生要佈署系統執行檔的資料匣
+      file:
+        path: {{ project_path }}{{ host_name }}
+        state: directory
+      become: yes
+      become_user: root
+
     - name: 送系統執行檔到部署位置
-      command: "rsync -rlgo /tmp/latest/* {{ project_path }} --specials"
+      command: "rsync -rlgo /tmp/latest/* {{ project_path }}{{ host_name }} --specials"
       # 這些 rsync 參數的意義
       # -r, --recursive             recurse into directories
       # -l, --links                 copy symlinks as symlinks
