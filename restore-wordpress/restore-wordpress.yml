@@ -82,7 +82,7 @@
 
     - name: 產生要佈署系統執行檔的資料匣
       file:
-        path: {{ project_path }}{{ host_name }}
+        path: "{{ project_path }}{{ host_name }}"
         state: directory
       become: yes
       become_user: root
