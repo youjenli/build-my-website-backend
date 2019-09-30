@@ -4,16 +4,25 @@
   vars_files:
     - ./vars-credentials.yml
   tasks:
+    # 還原的流程設計是要先透過建置 wordpress 環境的伺服器準備運作環境，然後再引入這份指令稿還原伺服器，
+    # 而不像 setup-wordpress 的建置流程會透過 wp-cli 下載指定版本的 wordpress。
+
     # 設定伺服器
     - include: ../configure-server/configure-server.yml
+
+    - name: 停止 httpd 的服務
+      service:
+        name: httpd
+        state: stopped
+      become: yes
+      become_user: root
 
     - name: 先清空可能存放先前用來還原其他資料的目錄
       file:
         path: /tmp/latest
         state: absent
-
-    # 還原的流程設計是要先透過建置 wordpress 環境的伺服器準備運作環境，然後再引入這份指令稿還原伺服器，
-    # 而不像 setup-wordpress 的建置流程會透過 wp-cli 下載指定版本的 wordpress。
+      become: yes
+      become_user: root
 
     - name: 解壓縮要回復的版本
       unarchive:
@@ -21,25 +30,58 @@
         src: ./backup.gz
         dest: /tmp
         mode: 0754
-    
-    - name: 停止 httpd 的服務
+
+    # 先還原資料庫
+
+    - name: 啟用資料庫
       service:
-        name: httpd
-        state: stopped
+        name: mariadb
+        state: started
       become: yes
       become_user: root
     
+    - name: 倒資料回資料庫
+      mysql_db:
+        state: import
+        name: "{{ wp_db_name }}"
+        target: /tmp/latest/backup.sql
+        login_user: "{{ mariadb_wp_user }}"
+        login_password: "{{ mariadb_wp_user_pwd }}"
+    
+    - name: 刪除已用來倒完系統資料的 sql 檔
+      file:
+        name: /tmp/latest/backup.sql
+        state: absent
+
+    - name: 傳送更新 siteurl 和 home 的 sql 到還原資料目錄
+      template:
+        src: ./update-siteurl-and-home.sql.j2
+        dest: /tmp/latest/update-siteurl-and-home.sql
+        mode: 0754
+    
+    - name: 更新 wordpress 的 siteurl 和 home
+      mysql_db:
+        name: "{{ wp_db_name }}"
+        state: import
+        target: /tmp/latest/update-siteurl-and-home.sql
+        login_user: "{{ mariadb_wp_user }}"
+        login_password: "{{ mariadb_wp_user_pwd }}"
+
+    - name: 刪除已用來更新系統網域名稱的 sql 檔
+      file:
+        name: /tmp/latest/update-siteurl-and-home.sql
+        state: absent
+
     # 安全起見，還原前要先刪除已在部署位置的執行檔以免版本錯亂
-    # 至於資料庫的部分則另外處理
     - name: 刪除在部署位置的執行檔
       file:
         name: "{{ project_path }}{{ host_name }}"
         state: absent
       become: yes
       become_user: root
-    
+
     - name: 送系統執行檔到部署位置
-      command: "rsync -rlgo /tmp/latest/{{ host_name }} {{ project_path }} --specials"
+      command: "rsync -rlgo /tmp/latest/* {{ project_path }} --specials"
       # 這些 rsync 參數的意義
       # -r, --recursive             recurse into directories
       # -l, --links                 copy symlinks as symlinks
@@ -47,10 +89,14 @@
       # -g, --group                 preserve group
       # --specials              preserve special files
       # --exclude=PATTERN       exclude files matching PATTERN
-      # rsync 可能會不複製所有檔名包含 .git 的檔案，但我一時想不到解法，因此暫時先這樣做
       become: yes
       become_user: root
-    
+
+    - name: 刪除還原資料夾
+      file:
+        path: /tmp/latest
+        state: absent
+
     - name: 設定系統執行檔的擁有者和群組皆為 root
       file:
         path: "{{ project_path }}{{ host_name }}"
@@ -76,47 +122,13 @@
         permissions: rwx
       become: true
       become_user: root
-    
-    - name: 啟用資料庫
-      service:
-        name: mariadb
-        state: started
-      become: yes
-      become_user: root
-    
-    - name: 倒資料回資料庫
-      mysql_db:
-        state: import
-        name: "{{ wp_db_name }}"
-        target: /tmp/latest/backup.sql
-        login_user: "{{ mariadb_wp_user }}"
-        login_password: "{{ mariadb_wp_user_pwd }}"
-    
-    - name: 傳送更新 siteurl 和 home 的 sql 到還原資料目錄
-      template:
-        src: ./update-siteurl-and-home.sql.j2
-        dest: /tmp/latest/update-siteurl-and-home.sql
-        mode: 0754
-    
-    - name: 更新 wordpress 的 siteurl 和 home
-      mysql_db:
-        name: "{{ wp_db_name }}"
-        state: import
-        target: /tmp/latest/update-siteurl-and-home.sql
-        login_user: "{{ mariadb_wp_user }}"
-        login_password: "{{ mariadb_wp_user_pwd }}"
-    
+
     - name: 啟動 httpd
       service:
         name: httpd
         state: started
       become: yes
       become_user: root
-    
-    - name: 刪除還原資料夾
-      file:
-        path: /tmp/latest
-        state: absent
 
     # 設定按時自動備份 wordpress 的排程
     - include: ../setup-wordpress-backup-scedule/setup-wordpress-backup-scedule.yml
