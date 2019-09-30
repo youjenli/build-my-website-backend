@@ -51,10 +51,10 @@
         --dbpass={{ mariadb_wp_user_pwd }}
         --path={{ project_path }}{{ host_name }}
       become: yes
-      become_user: root  
-    
+      become_user: root
+
     # 接下來兩項作業都是為了確保將來系統能協助更新擴充套件
-    
+
     - name: 開放 apache 存取專案錄的權限以利後續手動更新套件
       acl:
         path: "{{ project_path }}{{ host_name }}"
@@ -112,11 +112,17 @@
       become_user: root
       loop: "{{ wp_plugins }}"
 
+    - name: 啟用 wordpress 擴充套件
+      command: /usr/local/bin/wp plugin activate {{ item.name }}
+      become: true
+      become_user: root
+      loop: "{{ wp_plugins }}"
+
     - name: 設定 wordpress permalink 的格式
       # 之所以要做這件事的原因是要讓 wp rest api 以路徑的方式提供服務，而不是用請求參數提供服務
       # 詳見: https://developer.wordpress.org/rest-api/#routes-endpoints
       command: |
-        /usr/local/bin/wp option update permalink_structure '/%year%/%monthnum%/%postname%/'
+        /usr/local/bin/wp option update permalink_structure '/%postname%/'
         --path={{ project_path }}/{{ host_name }}
       become: yes
       become_user: root
