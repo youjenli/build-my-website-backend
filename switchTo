@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cp ./backup-wordpress/vars-credentials-$1.yml ./backup-wordpress/vars-credentials.yml
+cp ./configure-server/vars-configure-server-$1.yml ./configure-server/vars-configure-server.yml
+cp ./configure-server/vars-credentials-$1.yml ./configure-server/vars-credentials.yml
+cp ./configure-server/vars-request-ssl-certificate-$1.yml ./configure-server/vars-request-ssl-certificate.yml
+cp ./restore-wordpress/vars-credentials-$1.yml ./restore-wordpress/vars-credentials.yml
+cp ./setup-wordpress/vars-credentials-$1.yml ./setup-wordpress/vars-credentials.yml
+cp ./setup-wordpress-backup-scedule/vars-setup-wordpress-backup-scedule-$1.yml ./setup-wordpress-backup-scedule/vars-setup-wordpress-backup-scedule.yml
