@@ -13,22 +13,30 @@
       become: yes
       become_user: root
 
-    - name: 建立備份資料用的資料夾
+    - name: 清除備份資料用的資料匣
       file:
-        path: /home/{{ ansible_user }}/wp-backup/latest
+        path: "/home/{{ ansible_user }}/wp-backup/latest"
+        state: absent
+      become: true
+      become_user: root
+
+    - name: 建立備份資料用的資料匣
+      file:
+        path: "/home/{{ ansible_user }}/wp-backup/latest"
         state: directory
 
     - name: 從資料倒資料表到備份用的資料夾
       mysql_db:
         name: "{{ wp_db_name }}"
         state: dump
-        target: /home/{{ ansible_user }}/wp-backup/latest/backup.sql
+        target: "/home/{{ ansible_user }}/wp-backup/latest/backup.sql"
         login_user: "{{ mariadb_wp_user }}"
         login_password: "{{ mariadb_wp_user_pwd }}"
 
     - name: 從資料庫備份系統檔案到備份用的資料夾
-      command: "rsync -rlgo {{ project_path }}{{ host_name }}/* /home/{{ ansible_user }}/wp-backup/latest/ --specials --exclude .git"
-      # 這些 rsync 參數的意義
+      shell: "rsync -rlgo {{ project_path }}{{ host_name }}/* /home/{{ ansible_user }}/wp-backup/latest/ --specials --exclude .git"
+      # 注意，若使用 ansible command 模組執行此指令，則指令包含的 * 號會導致異常並拋出難懂的錯誤，所以得採用 shell 模組實行。
+      # rsync 參數的意義
       # -r, --recursive             recurse into directories
       # -l, --links                 copy symlinks as symlinks
       # -o, --owner                 preserve owner (super-user only)
