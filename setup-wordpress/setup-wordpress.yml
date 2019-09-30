@@ -68,7 +68,7 @@
       cron:
         name: 每月一日定期備份 worpress 系統
         minute: 0
-        hour: */6
+        hour: "*/6"
         job: "/usr/bin/php {{ project_path }}{{ host_name }}/wp-cron.php >/dev/null 2>&1"
         user: "{{ ansible_user }}"
 
@@ -89,7 +89,7 @@
       become_user: root
     
     - name: 額外設定 wordpress
-      command: "/usr/local/bin/wp config set FS_METHOD direct --path={{ project_path }}{{ host_name }}"
+      command: /usr/local/bin/wp config set FS_METHOD direct --path={{ project_path }}{{ host_name }}
       become: yes
       become_user: root
     
@@ -132,10 +132,15 @@
       loop: "{{ wp_plugins }}"
 
     - name: 啟用 wordpress 擴充套件
-      command: /usr/local/bin/wp plugin activate {{ item.name }}
+      command: /usr/local/bin/wp plugin activate {{ item }} --path={{ project_path }}{{ host_name }}
       become: true
       become_user: root
-      loop: "{{ wp_plugins }}"
+      with_items:
+        - wp-maintenance-mode
+        - meta-box
+        - wp-optimize
+        - admin-menu-editor
+      #註: 這裡必須以套件的資料匣名稱指定要啟用的套件，不能用前面安裝套件步驟所引用的套件名稱，否則指令無效。
 
     - name: 設定 wordpress permalink 的格式
       # 之所以要做這件事的原因是要讓 wp rest api 以路徑的方式提供服務，而不是用請求參數提供服務
