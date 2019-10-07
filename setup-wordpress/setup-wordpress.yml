@@ -150,6 +150,17 @@
         --path={{ project_path }}/{{ host_name }}
       become: yes
       become_user: root
+
+    # 語系一定要選中文，否則文章的自動摘抄功能可能會截錄過多文章內容。
+    - name: 安裝繁體中文語系
+      command: /usr/local/bin/wp language core install zh_TW --path={{ project_path }}{{ host_name }}
+      become: yes
+      become_user: root
+
+    - name: 啟用繁體中文語系
+      command: /usr/local/bin/wp language core activate zh_TW --path={{ project_path }}{{ host_name }}
+      become: yes
+      become_user: root
     
     - name: 重新啟動 httpd
       service:
