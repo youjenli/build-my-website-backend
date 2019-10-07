@@ -88,7 +88,7 @@
       become_user: root
 
     - name: 送系統執行檔到部署位置
-      shell: "rsync -rlgo /tmp/latest/* {{ project_path }}{{ host_name }} --specials"
+      shell: "rsync -rlgo /tmp/latest/* {{ project_path }} --specials"
       # 這些 rsync 參數的意義
       # -r, --recursive             recurse into directories
       # -l, --links                 copy symlinks as symlinks
