@@ -88,7 +88,9 @@
       become_user: root
 
     - name: 送系統執行檔到部署位置
-      shell: "rsync -rlgo /tmp/latest/* {{ project_path }} --specials"
+      shell: "rsync -rlgo /tmp/latest/ {{ project_path }}{{ host_name }} --specials"
+      # 另外，rsync 複製來源目錄的後面不用加上 *。
+      # 結尾若有 *，則 rsync 不會複製開頭是 . 的檔案，這導致 .htaccess 檔案備份失敗。
       # 這些 rsync 參數的意義
       # -r, --recursive             recurse into directories
       # -l, --links                 copy symlinks as symlinks

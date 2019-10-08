@@ -34,8 +34,11 @@
         login_password: "{{ mariadb_wp_user_pwd }}"
 
     - name: 從資料庫備份系統檔案到備份用的資料夾
-      shell: "rsync -rlgo {{ project_path }}{{ host_name }}/* /home/{{ ansible_user }}/wp-backup/latest/ --specials --exclude .git"
+      shell: "rsync -rlgo {{ project_path }}{{ host_name }}/ /home/{{ ansible_user }}/wp-backup/latest/ --specials"
       # 注意，若使用 ansible command 模組執行此指令，則指令包含的 * 號會導致異常並拋出難懂的錯誤，所以得採用 shell 模組實行。
+      # 另外，rsync 對象目錄的後面不用加上 * 或 .*。
+      # 結尾若有 *，則 rsync 不會複製開頭是 . 的檔案，這導致 .htaccess 檔案備份失敗；
+      # 至於 .* 則是會在複製的網站目錄內又再複製一份多餘的網站目錄。
       # rsync 參數的意義
       # -r, --recursive             recurse into directories
       # -l, --links                 copy symlinks as symlinks
