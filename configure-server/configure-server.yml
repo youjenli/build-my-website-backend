@@ -80,25 +80,6 @@
   become: yes
   become_user: root
 
-- name: "提供以 http 協定服務的 virtual host 設定檔"
-  template:
-    src: ./httpd.conf.j2
-    dest: /etc/httpd/conf.d/{{ host_name }}.conf
-    owner: root
-    group: root
-  become: yes
-  become_user: root
-
-- name: "提供以 https 協定服務的 virtual host 設定檔"
-  template:
-    src: ./httpd-ssl.conf.j2
-    dest: /etc/httpd/conf.d/{{ host_name }}-le-ssl.conf
-    owner: root
-    group: root
-  when: should_redirect_request_to_https == true
-  become: yes
-  become_user: root
-
 - name: "為 http, https 服務開放防火牆"
   firewalld:
     service: "{{ item }}"
@@ -123,6 +104,28 @@
 
 - include: ./request-ssl-certificate.yml
   when: should_request_ssl_certificate == true
+
+# 為網站加入 virtual host 設定
+# 注意，這步要在申請 SSL 憑證之後執行，否則 httpd 按照 httpd 設定會找不到由後序安裝的 certbot 所提供的 ssl 憑證和設定
+
+- name: "提供以 http 協定服務的 virtual host 設定檔"
+  template:
+    src: ./httpd.conf.j2
+    dest: /etc/httpd/conf.d/{{ host_name }}.conf
+    owner: root
+    group: root
+  become: yes
+  become_user: root
+
+- name: "提供以 https 協定服務的 virtual host 設定檔"
+  template:
+    src: ./httpd-ssl.conf.j2
+    dest: /etc/httpd/conf.d/{{ host_name }}-le-ssl.conf
+    owner: root
+    group: root
+  when: should_redirect_request_to_https == true
+  become: yes
+  become_user: root
 
 # 建置 mariadb
 # 首先為了安裝 PyMySQL 而安裝 epel 和 pip。

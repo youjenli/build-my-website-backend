@@ -30,6 +30,22 @@
 - name: 讀取申請 SSL 憑證的參數
   include_vars: ./vars-request-ssl-certificate.yml
 
+- name: 為申請 SSL 之驗證身份作業提供 httpd 設定檔
+  template:
+    src: ./site-owner-verification.conf.j2
+    dest: /etc/httpd/conf.d/site-owner-verification.conf
+    owner: root
+    group: root
+  become: yes
+  become_user: root
+
+- name: 重新啟動 httpd
+  service:
+    name: httpd
+    state: restarted
+  become: yes
+  become_user: root
+
 - name: 申請 SSL 憑證
   expect:
     command: "certbot --apache --domains {{ host_name }}"
@@ -52,6 +68,27 @@
   become_user: root
   # 設定 ignore errors 的原因是為了在 certbot 申請超出上限時，可以不會導致後續流程出錯。
   ignore_errors: yes
+
+- name: 關閉 httpd
+  service:
+    name: httpd
+    state: stopped
+  become: yes
+  become_user: root
+
+- name: 刪除為申請 SSL 之驗證身份作業而提供給 httpd 的設定檔
+  file:
+    path: /etc/httpd/conf.d/site-owner-verification.conf
+    state: absent
+  become: yes
+  become_user: root
+
+- name: 啟動 httpd
+  service:
+    name: httpd
+    state: started
+  become: yes
+  become_user: root
 
 - name: 設定憑證自動更新的排程
   cron:
