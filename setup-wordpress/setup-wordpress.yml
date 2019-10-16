@@ -135,11 +135,7 @@
       command: /usr/local/bin/wp plugin activate {{ item }} --path={{ project_path }}{{ host_name }}
       become: true
       become_user: root
-      with_items:
-        - wp-maintenance-mode
-        - meta-box
-        - wp-optimize
-        - admin-menu-editor
+      loop: "{{ plugins_to_activate }}"
       #註: 這裡必須以套件的資料匣名稱指定要啟用的套件，不能用前面安裝套件步驟所引用的套件名稱，否則指令無效。
 
     - name: 設定 wordpress permalink 的格式
